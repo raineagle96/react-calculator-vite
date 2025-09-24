@@ -4,3 +4,17 @@
 
 :root{ color-scheme: light; }
 .tabular-nums{ font-variant-numeric: tabular-nums; }
+@keyframes clickFlash {
+  0% {
+    background-color: #e5e7eb;   /* zinc-200 */
+    transform: scale(0.97);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+.animate-click {
+  animation: clickFlash 0.12s ease-out;
+}

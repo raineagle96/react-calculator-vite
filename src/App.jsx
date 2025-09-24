@@ -116,19 +116,50 @@ export default function App(){
   const [expr,setExpr]=useState('');
   const [ans,setAns]=useState('');
   const inputRef=useRef(null);
+  const [pressed, setPressed] = useState(null);
 
-  useEffect(()=>{
-    const onKey=(e)=>{
-      const k=e.key;
-      if(k==='Enter'){ e.preventDefault(); onEquals(); return }
-      if(k==='Backspace'){ e.preventDefault(); onBackspace(); return }
-      if(k==='Escape'){ e.preventDefault(); onClear(); return }
-      if(/[0-9.+\-*/()%]/.test(k)){ e.preventDefault(); append(k); return }
-    };
-    window.addEventListener('keydown',onKey);
-    return ()=>window.removeEventListener('keydown',onKey);
-  },[expr]);
+  function triggerFlash(action) {
+  // reset nhanh để có thể bấm cùng 1 phím liên tiếp vẫn thấy animation
+  setPressed(null);
+  // Đợi 1 frame rồi set action để chắc chắn animation được re-trigger
+  requestAnimationFrame(() => {
+    setPressed(action);
+    setTimeout(() => setPressed(null), 50); // khớp với thời gian trong CSS
+  });
+}
 
+ useEffect(() => {
+  const onKey = (e) => {
+    const k = e.key;
+
+    if (k === 'Enter') { 
+      e.preventDefault(); 
+      triggerFlash('='); 
+      onEquals(); 
+      return; 
+    }
+    if (k === 'Backspace') { 
+      e.preventDefault(); 
+      triggerFlash('backspace'); 
+      onBackspace(); 
+      return; 
+    }
+    if (k === 'Escape') { 
+      e.preventDefault(); 
+      triggerFlash('clear'); 
+      onClear(); 
+      return; 
+    }
+    if (/[0-9.+\-*/()%]/.test(k)) {
+      e.preventDefault(); 
+      triggerFlash(k);     // ví dụ '7', '+', '(', ')', '%', ...
+      append(k); 
+      return; 
+    }
+  };
+  window.addEventListener('keydown', onKey);
+  return () => window.removeEventListener('keydown', onKey);
+}, [expr]);
   function append(s){
     if(s==='.'){
       const last=expr.split(/[^0-9.]/).pop();
@@ -165,12 +196,24 @@ export default function App(){
           </div>
           <div className="grid grid-cols-4 gap-2">
             {KEYS.map((k, i)=> (
-              <button key={i} onClick={()=>handlePress(k.action)}
-                className={`h-14 rounded-2xl text-lg font-medium shadow-sm transition active:scale-[0.98] ${k.className||''} `+
-                  (k.variant==='operator'?'bg-zinc-100 hover:bg-zinc-200':
-                   k.variant==='equals'?'col-span-1 bg-zinc-900 text-white hover:bg-black':
-                   k.variant==='muted'?'bg-zinc-50 hover:bg-zinc-100':'bg-white border border-zinc-200 hover:bg-zinc-50')}
-              >{k.label}</button>
+             <button
+  key={i}
+  onClick={() => { triggerFlash(k.action); handlePress(k.action); }}
+  className={
+    `h-14 rounded-2xl text-lg font-medium shadow-sm transition 
+     active:scale-95 ${k.className || ''} ` +
+    (k.variant === 'operator'
+      ? 'bg-zinc-100 hover:bg-zinc-200'
+      : k.variant === 'equals'
+      ? 'col-span-1 bg-zinc-900 text-white hover:bg-black'
+      : k.variant === 'muted'
+      ? 'bg-zinc-50 hover:bg-zinc-100'
+      : 'bg-white border border-zinc-200 hover:bg-zinc-50')
+    + (pressed === k.action ? ' animate-click' : '')
+  }
+>
+  {k.label}
+</button>
             ))}
           </div>
           <div className="mt-4 text-xs text-zinc-500 leading-relaxed">
